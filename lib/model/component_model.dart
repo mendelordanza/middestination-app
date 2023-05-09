@@ -6,7 +6,8 @@ class ComponentModel {
   });
 
   factory ComponentModel.fromJson(Map<dynamic, dynamic> json) => ComponentModel(
-        componentsData: json['components'],
+        componentsData: List<ComponentDataModel>.from(
+            json["components"].map((e) => ComponentDataModel.fromJson(e))),
       );
 
   dynamic toJson() => {
@@ -15,15 +16,15 @@ class ComponentModel {
 }
 
 class ComponentDataModel {
-  String customId;
+  String? customId;
 
   ComponentDataModel({
-    required this.customId,
+    this.customId,
   });
 
   factory ComponentDataModel.fromJson(Map<dynamic, dynamic> json) =>
       ComponentDataModel(
-        customId: json['custom_id'],
+        customId: json['custom_id'] == null ? null : json['custom_id'],
       );
 
   dynamic toJson() => {

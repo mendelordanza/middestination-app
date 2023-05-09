@@ -8,6 +8,7 @@ class CustomTextField extends StatelessWidget {
   String? Function(String?)? validator;
   Widget? prefix;
   TextInputType? textInputType;
+  int? maxLines;
 
   CustomTextField({
     required this.controller,
@@ -17,6 +18,7 @@ class CustomTextField extends StatelessWidget {
     this.validator,
     this.prefix,
     this.textInputType,
+    this.maxLines,
   });
 
   @override
@@ -42,7 +44,7 @@ class CustomTextField extends StatelessWidget {
           keyboardType: textInputType,
           textInputAction: textInputAction,
           autofocus: true,
-          maxLines: 5,
+          maxLines: maxLines,
           decoration: InputDecoration(
             hintText: hintText,
             enabledBorder: OutlineInputBorder(

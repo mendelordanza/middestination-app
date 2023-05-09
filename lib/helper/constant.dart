@@ -1,0 +1,1 @@
+const initialFreeCredits = 1;
