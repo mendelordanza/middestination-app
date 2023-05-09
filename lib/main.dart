@@ -2,7 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:midjourney_app/ui/home_page.dart';
 
-void main() {
+import 'config_reader.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await ConfigReader.initialize();
+
   runApp(
     ProviderScope(
       child: MyApp(),

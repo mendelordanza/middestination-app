@@ -20,9 +20,11 @@ class _HomePageState extends ConsumerState<HomePage> {
     Uri.parse("wss://gateway.discord.gg?v=9&encoding-json"),
   );
   String? generatedImage;
+  String? sessionId;
+  String? messageId;
+  List<String> variations = [];
   final promptTextController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  String? sessionId;
 
   sendInitialPayload() {
     final payload = {
@@ -59,10 +61,21 @@ class _HomePageState extends ConsumerState<HomePage> {
     sendInitialPayload();
     _channel.stream.listen((message) {
       final decoded = json.decode(message);
-      if (decoded['d'] != null && decoded['d']['attachments'] != null) {
-        print(decoded['d']['attachments']);
+      if (decoded['d'] != null &&
+          decoded['d']['attachments'] != null &&
+          List.from(decoded['d']['attachments']).isNotEmpty) {
         setState(() {
+          messageId = decoded['d']['id'];
           generatedImage = decoded['d']['attachments'][0]['url'];
+        });
+      }
+      if (decoded['d'] != null &&
+          decoded['d']['components'] != null &&
+          List.from(decoded['d']['components']).isNotEmpty) {
+        setState(() {
+          variations = List<String>.from(decoded['d']['components'][1]
+                  ['components']
+              .map((component) => component['custom_id']));
         });
       }
       switch (decoded['op']) {
@@ -71,7 +84,6 @@ class _HomePageState extends ConsumerState<HomePage> {
           switch (eventName) {
             case 'READY':
               final id = decoded['d']['session_id'];
-              print('Session ID: $id');
               sessionId = id;
               break;
             // Handle other event types here
@@ -98,6 +110,31 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final http = ref.read(httpProvider);
+    final variationList = variations
+        .asMap()
+        .map(
+          (i, customId) => MapEntry(
+            i,
+            Padding(
+              padding: EdgeInsets.all(8.0),
+              child: CustomButton(
+                onPressed: () {
+                  if (sessionId != null && messageId != null) {
+                    print("SESSION ID: $sessionId $messageId $customId");
+                    http.sendVariation(
+                        sessionId: sessionId!,
+                        customId: customId,
+                        messageId: messageId!);
+                  }
+                },
+                child: Text("Show variation ${i + 1}"),
+                color: Colors.black45,
+              ),
+            ),
+          ),
+        )
+        .values
+        .toList();
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -113,47 +150,53 @@ class _HomePageState extends ConsumerState<HomePage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Form(
-                    key: _formKey,
-                    child: CustomTextField(
-                      label: "Prompt",
-                      controller: promptTextController,
-                      textInputType: TextInputType.multiline,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Prompt is required';
-                        }
-                        return null;
-                      },
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Form(
+                      key: _formKey,
+                      child: CustomTextField(
+                        label: "Prompt",
+                        controller: promptTextController,
+                        textInputType: TextInputType.multiline,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Prompt is required';
+                          }
+                          return null;
+                        },
+                      ),
                     ),
                   ),
-                ),
-                if (generatedImage != null)
-                  Column(
-                    children: [
-                      Image.network(generatedImage!),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          IconButton(
-                            onPressed: () {
-                              if (generatedImage != null) {
-                                http.downloadFile(generatedImage!,
-                                    DateTime.now().toIso8601String());
-                              }
-                            },
-                            icon: Icon(Icons.save_alt),
+                  if (generatedImage != null)
+                    Column(
+                      children: [
+                        Image.network(generatedImage!),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IconButton(
+                              onPressed: () {
+                                if (generatedImage != null) {
+                                  http.downloadFile(generatedImage!,
+                                      DateTime.now().toIso8601String());
+                                }
+                              },
+                              icon: Icon(Icons.save_alt),
+                            ),
+                            Text("Save Image")
+                          ],
+                        ),
+                        if (generatedImage != null)
+                          Wrap(
+                            children: variationList,
                           ),
-                          Text("Save Image")
-                        ],
-                      )
-                    ],
-                  ),
-              ],
+                      ],
+                    ),
+                ],
+              ),
             ),
           ),
           Padding(

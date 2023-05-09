@@ -51,6 +51,42 @@ class HttpService {
     }
   }
 
+  sendVariation({
+    required String sessionId,
+    required String messageId,
+    required String customId,
+  }) async {
+    final jsonBody = {
+      "type": 3,
+      "guild_id": ConfigReader.getGuildId(),
+      "channel_id": ConfigReader.getChannelId(),
+      "message_flags": 0,
+      "message_id": messageId,
+      "application_id": ConfigReader.getApplicationId(),
+      "session_id": sessionId,
+      "data": {
+        "component_type": 2,
+        "custom_id": customId
+      }
+    };
+    var headers = {
+      'Content-Type': 'application/json',
+      'Authorization': ConfigReader.getToken(),
+    };
+    var request =
+    http.Request('POST', Uri.parse('https://discord.com/api/interactions'));
+    request.body = json.encode(jsonBody);
+    request.headers.addAll(headers);
+
+    http.StreamedResponse response = await request.send();
+
+    if (response.statusCode == 204) {
+      print(await response.stream.bytesToString());
+    } else {
+      print(response.reasonPhrase);
+    }
+  }
+
   downloadFile(String url, String name) async {
     try {
       var imageId = await ImageDownloader.downloadImage(url);
