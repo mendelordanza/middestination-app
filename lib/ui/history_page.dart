@@ -1,13 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:midjourney_app/data/http_repo.dart';
 import 'package:midjourney_app/data/local_db.dart';
 
-class HistoryPage extends ConsumerWidget {
+class HistoryPage extends ConsumerStatefulWidget {
   const HistoryPage({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HistoryPage> createState() => _HistoryPageState();
+}
+
+class _HistoryPageState extends ConsumerState<HistoryPage> {
+  showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final localDb = ref.read(localStorageProvider);
+    final http = ref.read(httpProvider);
     return Scaffold(
       appBar: AppBar(
         iconTheme: IconThemeData(
@@ -19,7 +34,7 @@ class HistoryPage extends ConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-            Text("Showing last 10 generations"),
+            Text("Only successful image generations will show here"),
             Expanded(
               child: FutureBuilder(
                   future: localDb.readAllHistories(),
@@ -30,11 +45,64 @@ class HistoryPage extends ConsumerWidget {
                           itemCount: snapshot.data!.length,
                           itemBuilder: (context, index) {
                             final item = snapshot.data![index];
-                            return Column(
-                              children: [
-                                Text(item.content),
-                                Image.network(item.url),
-                              ],
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  if (item.url != null)
+                                    Stack(
+                                      alignment:
+                                          AlignmentDirectional.bottomStart,
+                                      children: [
+                                        Image.network(item.url ?? ""),
+                                        Padding(
+                                          padding: const EdgeInsets.all(16.0),
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(8.0),
+                                              color: Colors.black26
+                                                  .withOpacity(0.5),
+                                            ),
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.all(16.0),
+                                              child: Text(
+                                                item.content,
+                                                style: TextStyle(
+                                                  fontSize: 16.0,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  if (item.url != null)
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        IconButton(
+                                          onPressed: () {
+                                            http.downloadFile(
+                                              url: item.url!,
+                                              name: DateTime.now()
+                                                  .toIso8601String(),
+                                              callback: (message) {
+                                                showSnackBar(message);
+                                              },
+                                            );
+                                          },
+                                          icon: Icon(Icons.save_alt),
+                                        ),
+                                        Text("Save Image")
+                                      ],
+                                    ),
+                                ],
+                              ),
                             );
                           });
                     }

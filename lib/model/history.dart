@@ -11,25 +11,25 @@ class History {
   final int? id;
   final String messageId;
   final String content;
-  final String url;
+  final String? url;
 
   const History({
     required this.messageId,
     this.id,
     required this.content,
-    required this.url,
+    this.url,
   });
 
   factory History.fromJson(Map<dynamic, dynamic> json) => History(
         id: json[HistoryFields.id] as int?,
         messageId: json[HistoryFields.messageId] as String,
         content: json[HistoryFields.content] as String,
-        url: json[HistoryFields.url] as String,
+        url: json[HistoryFields.url] as String?,
       );
 
   Map<String, Object?> toJson() => {
         HistoryFields.id: id,
-    HistoryFields.messageId: messageId,
+        HistoryFields.messageId: messageId,
         HistoryFields.content: content,
         HistoryFields.url: url,
       };

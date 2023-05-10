@@ -16,6 +16,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../data/local_db.dart';
+import '../helper/route_strings.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -215,7 +216,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             "This license has already been used. Please purchase a new license");
                       } else {
                         showSnackBar(
-                            "You can now enjoy 10 more image generations!");
+                            "You can now enjoy ${10 - verification.uses} more image generations!");
                       }
                     },
                     (message) {
@@ -300,13 +301,13 @@ class _HomePageState extends ConsumerState<HomePage> {
     String? url,
   ) {
     final localDb = ref.read(localStorageProvider);
-    if (messageId != null && content != null && url != null) {
-      final regex = RegExp(r'^\*\*(.*?)\*\*(.*)\*\*$');
+    if (messageId != null && content != null) {
+      final regex = RegExp(r'\*\*(.*?)\*\*');
       final match = regex.firstMatch(content);
+      print("TITLE: ${match?.group(1)}");
       localDb.create(History(
         messageId: messageId,
-        content:
-            match != null && match.group(1) != null ? match.group(1)! : content,
+        content: match?.group(1) ?? content,
         url: url,
       ));
     }
@@ -327,13 +328,15 @@ class _HomePageState extends ConsumerState<HomePage> {
           decoded['d']['channel_id'] != null &&
           decoded['d']['channel_id'] == ConfigReader.getChannelId()) {
         final messageData = MessageModel.fromJson(decoded['d']);
-        if (messageData.attachments != null &&
+        if (messageData.content != null &&
+            messageData.attachments != null &&
             messageData.attachments!.isNotEmpty) {
           //Save to DB
-          if (!RegExp(r'\d+%').hasMatch(messageData.content!)) {
+          if (messageData.attachments![0].url.contains(".png")) {
             saveToDb(messageData.id, messageData.content,
                 messageData.attachments![0].url);
           }
+
           setState(() {
             _isLoading = false;
             messageId = messageData.id;
@@ -394,10 +397,10 @@ class _HomePageState extends ConsumerState<HomePage> {
               padding: EdgeInsets.all(8.0),
               child: CustomButton(
                 onPressed: () {
+                  setState(() {
+                    _isLoading = true;
+                  });
                   sendToMidjourney(imagine: () {
-                    setState(() {
-                      _isLoading = true;
-                    });
                     if (sessionId != null && messageId != null) {
                       http.sendVariation(
                           sessionId: sessionId!,
@@ -425,15 +428,15 @@ class _HomePageState extends ConsumerState<HomePage> {
         elevation: 0,
         backgroundColor: Colors.transparent,
         actions: [
-          // IconButton(
-          //   onPressed: () {
-          //     Navigator.pushNamed(context, RouteStrings.history);
-          //   },
-          //   icon: Icon(
-          //     Icons.history,
-          //     color: Colors.black87,
-          //   ),
-          // )
+          IconButton(
+            onPressed: () {
+              Navigator.pushNamed(context, RouteStrings.history);
+            },
+            icon: Icon(
+              Icons.history,
+              color: Colors.black87,
+            ),
+          )
         ],
       ),
       body: Column(
@@ -461,38 +464,39 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ),
                     ),
                   ),
+                  if (_isLoading)
+                    Text("Generating. Please don't close the app.",
+                        style: TextStyle(
+                          fontSize: 18.0,
+                        )),
                   if (generatedImage != null)
                     Column(
                       children: [
-                        if (_isLoading)
-                          Center(child: Text("Generating. Please wait..."))
-                        else
-                          Column(
-                            children: [
-                              Image.network(generatedImage!),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  IconButton(
-                                    onPressed: () {
-                                      if (generatedImage != null) {
-                                        http.downloadFile(
-                                          url: generatedImage!,
-                                          name:
-                                              DateTime.now().toIso8601String(),
-                                          callback: (message) {
-                                            showSnackBar(message);
-                                          },
-                                        );
-                                      }
-                                    },
-                                    icon: Icon(Icons.save_alt),
-                                  ),
-                                  Text("Save Image")
-                                ],
-                              ),
-                            ],
-                          ),
+                        Column(
+                          children: [
+                            Image.network(generatedImage!),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                IconButton(
+                                  onPressed: () {
+                                    if (generatedImage != null) {
+                                      http.downloadFile(
+                                        url: generatedImage!,
+                                        name: DateTime.now().toIso8601String(),
+                                        callback: (message) {
+                                          showSnackBar(message);
+                                        },
+                                      );
+                                    }
+                                  },
+                                  icon: Icon(Icons.save_alt),
+                                ),
+                                Text("Save Image")
+                              ],
+                            ),
+                          ],
+                        ),
                         if (variations.isNotEmpty)
                           Wrap(
                             children: variationList,
@@ -559,16 +563,18 @@ class _HomePageState extends ConsumerState<HomePage> {
                   onPressed: () {
                     //Check if there is still 10 free questions
                     if (_formKey.currentState!.validate() && !_isLoading) {
+                      setState(() {
+                        _isLoading = true;
+                      });
                       sendToMidjourney(imagine: () {
-                        setState(() {
-                          _isLoading = true;
-                        });
                         sendPrompt(http);
                       });
                     }
                   },
                   child: _isLoading
-                      ? PlatformProgressIndicator()
+                      ? PlatformProgressIndicator(
+                          color: Colors.white,
+                        )
                       : Text("Generate"),
                 ),
               ],

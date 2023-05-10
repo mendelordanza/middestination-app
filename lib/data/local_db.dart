@@ -30,22 +30,34 @@ class DeeperDatabase {
   Future _createDB(Database db, int version) async {
     final idType = "INTEGER PRIMARY KEY AUTOINCREMENT";
     final stringType = "TEXT NOT NULL";
+    final stringNullType = "TEXT";
 
     await db.execute('''
 CREATE TABLE $tableHistory (
   ${HistoryFields.id} $idType, 
   ${HistoryFields.messageId} $stringType,
   ${HistoryFields.content} $stringType,
-  ${HistoryFields.url} $stringType
+  ${HistoryFields.url} $stringNullType
 )
 ''');
   }
 
   //Histories
-  Future<History> create(History history) async {
+  Future<bool> checkIfExists(String value) async {
     final db = await instance.database;
-    final id = await db.insert(tableHistory, history.toJson());
-    return history.copy(id: id);
+    final result = await db.query(tableHistory,
+        where: '${HistoryFields.messageId} = ?', whereArgs: [value]);
+    return result.isNotEmpty;
+  }
+
+  Future<History> create(History history) async {
+    final ifExist = await checkIfExists(history.messageId);
+    if (!ifExist) {
+      final db = await instance.database;
+      final id = await db.insert(tableHistory, history.toJson());
+      return history.copy(id: id);
+    }
+    return history;
   }
 
   Future<List<History>> readAllHistories() async {
