@@ -17,6 +17,9 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../data/local_db.dart';
 import '../helper/route_strings.dart';
+import '../model/pending.dart';
+import '../service/pending_service.dart';
+import 'history_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -216,7 +219,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             "This license has already been used. Please purchase a new license");
                       } else {
                         showSnackBar(
-                            "You can now enjoy ${10 - verification.uses} more image generations!");
+                            "You can now enjoy ${11 - verification.uses} more image generations!");
                       }
                     },
                     (message) {
@@ -295,27 +298,65 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
   }
 
-  saveToDb(
-    String? messageId,
-    String? content,
-    String? url,
-  ) {
-    final localDb = ref.read(localStorageProvider);
-    if (messageId != null && content != null) {
-      final regex = RegExp(r'\*\*(.*?)\*\*');
-      final match = regex.firstMatch(content);
-      print("TITLE: ${match?.group(1)}");
-      localDb.create(History(
-        messageId: messageId,
-        content: match?.group(1) ?? content,
-        url: url,
-      ));
-    }
-  }
+  // saveToDb(
+  //   String? messageId,
+  //   String? content,
+  //   String? url,
+  // ) {
+  //   final localDb = ref.read(localStorageProvider);
+  //   if (messageId != null && content != null) {
+  //     final regex = RegExp(r'\*\*(.*?)\*\*');
+  //     final match = regex.firstMatch(content);
+  //     print("TITLE: ${match?.group(1)}");
+  //     localDb.create(
+  //       History(
+  //         messageId: messageId,
+  //         content: match?.group(1) ?? content,
+  //         url: url,
+  //         createdAt: DateTime.now().toIso8601String(),
+  //       ),
+  //     );
+  //   }
+  // }
+
+  // savePending({
+  //   String? messageId,
+  //   required String content,
+  //   String? url,
+  // }) {
+  //   final localDb = ref.read(localStorageProvider);
+  //   final http = ref.read(httpProvider);
+  //   if (content != null) {
+  //     final regex = RegExp(r'\*\*(.*?)\*\*');
+  //     final match = regex.firstMatch(content);
+  //     localDb.checkIfExistsPending(content).then(
+  //       (value) {
+  //         if (!value) {
+  //           http.getLatestMessage(
+  //             limit: 1,
+  //             onSuccess: (message) {
+  //               localDb.createPending(Pending(
+  //                 messageId: messageId,
+  //                 content: match?.group(1) ?? content,
+  //                 url: url,
+  //                 prevMessageId: message.id ?? "",
+  //                 createdAt: DateTime.now().toIso8601String(),
+  //               ));
+  //             },
+  //             onError: (message) {
+  //               print(message);
+  //             },
+  //           );
+  //         }
+  //       },
+  //     );
+  //   }
+  // }
 
   @override
   void dispose() {
     _channel.sink.close();
+    promptTextController.dispose();
     super.dispose();
   }
 
@@ -324,37 +365,42 @@ class _HomePageState extends ConsumerState<HomePage> {
     sendInitialPayload();
     _channel.stream.listen((message) {
       final decoded = json.decode(message);
-      if (decoded['d'] != null &&
-          decoded['d']['channel_id'] != null &&
-          decoded['d']['channel_id'] == ConfigReader.getChannelId()) {
-        final messageData = MessageModel.fromJson(decoded['d']);
-        if (messageData.content != null &&
-            messageData.attachments != null &&
-            messageData.attachments!.isNotEmpty) {
-          //Save to DB
-          if (messageData.attachments![0].url.contains(".png")) {
-            saveToDb(messageData.id, messageData.content,
-                messageData.attachments![0].url);
-          }
-
-          setState(() {
-            _isLoading = false;
-            messageId = messageData.id;
-            generatedImage = messageData.attachments![0].url;
-          });
-        }
-        if (messageData.components != null &&
-            messageData.components!.isNotEmpty &&
-            messageData.components!.length > 1) {
-          setState(() {
-            _isLoading = false;
-            variations = List<String>.from(
-                messageData.components![1].componentsData.map((component) {
-              return component.customId;
-            }));
-          });
-        }
-      }
+      // if (decoded['d'] != null &&
+      //     decoded['d']['channel_id'] != null &&
+      //     decoded['d']['channel_id'] == ConfigReader.getChannelId()) {
+      //   final messageData = MessageModel.fromJson(decoded['d']);
+      //   if (messageData.content != null &&
+      //       messageData.attachments != null &&
+      //       messageData.attachments!.isNotEmpty) {
+      //     //Save to DB
+      //     if (messageData.attachments![0].url.contains(".png")) {
+      //       saveToDb(messageData.id, messageData.content,
+      //           messageData.attachments![0].url);
+      //     } else {
+      //       savePending(
+      //           messageId: messageData.id,
+      //           content: messageData.content!,
+      //           url: messageData.attachments![0].url);
+      //     }
+      //
+      //     setState(() {
+      //       _isLoading = false;
+      //       messageId = messageData.id;
+      //       generatedImage = messageData.attachments![0].url;
+      //     });
+      //   }
+      //   if (messageData.components != null &&
+      //       messageData.components!.isNotEmpty &&
+      //       messageData.components!.length > 1) {
+      //     setState(() {
+      //       _isLoading = false;
+      //       variations = List<String>.from(
+      //           messageData.components![1].componentsData.map((component) {
+      //         return component.customId;
+      //       }));
+      //     });
+      //   }
+      // }
       switch (decoded['op']) {
         case 0: // Dispatch event
           final eventName = decoded['t'];
@@ -397,11 +443,11 @@ class _HomePageState extends ConsumerState<HomePage> {
               padding: EdgeInsets.all(8.0),
               child: CustomButton(
                 onPressed: () {
-                  setState(() {
-                    _isLoading = true;
-                  });
                   sendToMidjourney(imagine: () {
                     if (sessionId != null && messageId != null) {
+                      ref
+                          .read(pendingImagesProvider.notifier)
+                          .saveToPending(content: promptTextController.text);
                       http.sendVariation(
                           sessionId: sessionId!,
                           messageId: messageId!,
@@ -417,170 +463,175 @@ class _HomePageState extends ConsumerState<HomePage> {
         )
         .values
         .toList();
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "Middestination",
-          style: TextStyle(
-            color: Colors.black87,
-          ),
-        ),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, RouteStrings.history);
-            },
-            icon: Icon(
-              Icons.history,
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            "Middestination",
+            style: TextStyle(
               color: Colors.black87,
             ),
-          )
-        ],
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Form(
-                      key: _formKey,
-                      child: CustomTextField(
-                        label: "Prompt",
-                        controller: promptTextController,
-                        textInputType: TextInputType.multiline,
-                        maxLines: 5,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Prompt is required';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
+          ),
+          iconTheme: IconThemeData(
+            color: Colors.black87,
+          ),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+        ),
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: _formKey,
+                  child: CustomTextField(
+                    label: "Prompt",
+                    controller: promptTextController,
+                    textInputType: TextInputType.multiline,
+                    maxLines: 5,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Prompt is required';
+                      }
+                      return null;
+                    },
                   ),
-                  if (_isLoading)
-                    Text("Generating. Please don't close the app.",
-                        style: TextStyle(
-                          fontSize: 18.0,
-                        )),
-                  if (generatedImage != null)
-                    Column(
-                      children: [
-                        Column(
-                          children: [
-                            Image.network(generatedImage!),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                IconButton(
-                                  onPressed: () {
-                                    if (generatedImage != null) {
-                                      http.downloadFile(
-                                        url: generatedImage!,
-                                        name: DateTime.now().toIso8601String(),
-                                        callback: (message) {
-                                          showSnackBar(message);
-                                        },
-                                      );
-                                    }
-                                  },
-                                  icon: Icon(Icons.save_alt),
-                                ),
-                                Text("Save Image")
-                              ],
-                            ),
-                          ],
-                        ),
-                        if (variations.isNotEmpty)
-                          Wrap(
-                            children: variationList,
-                          ),
-                      ],
-                    ),
-                ],
+                ),
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                if (prefs.getLicenseKey() == null)
-                  Consumer(builder: (context, ref, _) {
-                    final count = ref.watch(creditsCheckerProvider);
-                    return Padding(
-                      padding: const EdgeInsets.only(left: 16.0),
-                      child: Text(
-                        "$count free credits left",
-                        style: TextStyle(
-                          color: Colors.black87,
-                        ),
-                      ),
-                    );
-                  }),
-                SizedBox(
-                  height: 10,
+              TabBar(
+                indicatorColor: Colors.black,
+                labelColor: Colors.black87,
+                tabs: [
+                  Tab(
+                    text: "Pending",
+                  ),
+                  Tab(text: "Complete"),
+                ],
+                indicatorSize: TabBarIndicatorSize.tab,
+              ),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    PendingPage(),
+                    CompletePage(),
+                  ],
                 ),
-                // InkWell(
-                //   onTap: () {
-                //     _launchUrl("https://rlphfrmthestart.gumroad.com/l/mgqaa");
-                //     licenseVerificationDialog();
-                //   },
-                //   child: Ink(
-                //     width: double.infinity,
-                //     padding: EdgeInsets.symmetric(
-                //       vertical: 11.0,
-                //       horizontal: 16.0,
-                //     ),
-                //     decoration: BoxDecoration(
-                //       gradient: LinearGradient(
-                //         colors: [
-                //           Color(0xFFFFA800),
-                //           Color(0xFF9E00FF),
-                //         ],
-                //       ),
-                //       borderRadius: BorderRadius.circular(8.0),
-                //     ),
-                //     child: Center(
-                //       child: Text(
-                //         "Buy Credits",
-                //         style: TextStyle(
-                //           fontSize: 14.0,
-                //           fontWeight: FontWeight.w700,
-                //           color: Colors.white,
-                //         ),
-                //       ),
-                //     ),
-                //   ),
-                // ),
-                CustomButton(
-                  onPressed: () {
-                    //Check if there is still 10 free questions
-                    if (_formKey.currentState!.validate() && !_isLoading) {
-                      setState(() {
-                        _isLoading = true;
-                      });
-                      sendToMidjourney(imagine: () {
-                        sendPrompt(http);
-                      });
-                    }
-                  },
-                  child: _isLoading
-                      ? PlatformProgressIndicator(
-                          color: Colors.white,
-                        )
-                      : Text("Generate"),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    if (prefs.getLicenseKey() == null)
+                      Consumer(builder: (context, ref, _) {
+                        final count = ref.watch(creditsCheckerProvider);
+                        return Padding(
+                          padding: const EdgeInsets.only(left: 16.0),
+                          child: Text(
+                            "$count free credits left",
+                            style: TextStyle(
+                              color: Colors.black87,
+                            ),
+                          ),
+                        );
+                      }),
+                    SizedBox(
+                      height: 10,
+                    ),
+                    // InkWell(
+                    //   onTap: () {
+                    //     _launchUrl("https://rlphfrmthestart.gumroad.com/l/mgqaa");
+                    //     licenseVerificationDialog();
+                    //   },
+                    //   child: Ink(
+                    //     width: double.infinity,
+                    //     padding: EdgeInsets.symmetric(
+                    //       vertical: 11.0,
+                    //       horizontal: 16.0,
+                    //     ),
+                    //     decoration: BoxDecoration(
+                    //       gradient: LinearGradient(
+                    //         colors: [
+                    //           Color(0xFFFFA800),
+                    //           Color(0xFF9E00FF),
+                    //         ],
+                    //       ),
+                    //       borderRadius: BorderRadius.circular(8.0),
+                    //     ),
+                    //     child: Center(
+                    //       child: Text(
+                    //         "Buy Credits",
+                    //         style: TextStyle(
+                    //           fontSize: 14.0,
+                    //           fontWeight: FontWeight.w700,
+                    //           color: Colors.white,
+                    //         ),
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ),
+                    CustomButton(
+                      onPressed: () {
+                        //Check if there is still 10 free questions
+                        if (_formKey.currentState!.validate() && !_isLoading) {
+                          final http = ref.read(httpProvider);
+                          final prefs = ref.read(sharedPrefsProvider);
+                          final currentCount = ref.read(creditsCheckerProvider);
+                          final licenseKey = prefs.getLicenseKey();
+
+                          if (licenseKey != null) {
+                            http.verifyLicense(
+                              licenseKey,
+                              (verification) {
+                                if (verification.uses > 11) {
+                                  http.disableLicense(licenseKey);
+                                  prefs.removeLicenseKey();
+                                  showBuyMoreCredits();
+                                } else {
+                                  ref
+                                      .read(pendingImagesProvider.notifier)
+                                      .saveToPending(
+                                          content: promptTextController.text);
+                                  sendPrompt(http);
+                                }
+                              },
+                              (message) {
+                                showBuyMoreCredits();
+                              },
+                            );
+                          } else if (currentCount == 0) {
+                            showBuyMoreCredits();
+                          } else {
+                            ref
+                                .read(pendingImagesProvider.notifier)
+                                .saveToPending(
+                                    content: promptTextController.text);
+                            sendPrompt(http);
+                          }
+
+                          // sendToMidjourney(imagine: () {
+                          //   ref
+                          //       .read(pendingImagesProvider.notifier)
+                          //       .saveToPending(
+                          //           content: promptTextController.text);
+                          //   sendPrompt(http);
+                          // });
+                        }
+                      },
+                      child: _isLoading
+                          ? PlatformProgressIndicator(
+                              color: Colors.white,
+                            )
+                          : Text("Generate"),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

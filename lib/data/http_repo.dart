@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_downloader/image_downloader.dart';
+import 'package:midjourney_app/model/message_model.dart';
 import 'package:midjourney_app/model/verify_model.dart';
 
 import '../config_reader.dart';
@@ -49,6 +50,90 @@ class HttpService {
       print(await response.stream.bytesToString());
     } else {
       print(response.reasonPhrase);
+    }
+  }
+
+  getLatestMessage({
+    required int limit,
+    String? after,
+    required Function(MessageModel) onSuccess,
+    required Function(String) onError,
+  }) async {
+    var url = Uri();
+    if (after != null) {
+      url = Uri.parse(
+          'https://discord.com/api/v10/channels/${ConfigReader.getChannelId()}'
+          '/messages?limit=$limit&after=$after');
+    } else {
+      url = Uri.parse(
+          'https://discord.com/api/v10/channels/${ConfigReader.getChannelId()}'
+          '/messages?limit=$limit');
+    }
+    var headers = {
+      'Authorization': ConfigReader.getToken(),
+    };
+    var response = await http.get(url, headers: headers);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body)[0];
+      final message = MessageModel.fromJson(data);
+      onSuccess(message);
+    } else if (response.statusCode == 404) {
+      onError("Did not get message");
+    }
+  }
+
+  getPrevMessageId({
+    required int limit,
+    required Function(MessageModel) onSuccess,
+    required Function(String) onError,
+  }) async {
+    var url = Uri.parse(
+        'https://discord.com/api/v10/channels/${ConfigReader.getChannelId()}'
+        '/messages?limit=$limit');
+    var headers = {
+      'Authorization': ConfigReader.getToken(),
+    };
+    var response = await http.get(url, headers: headers);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body)[0];
+      final message = MessageModel.fromJson(data);
+      onSuccess(message);
+    } else if (response.statusCode == 404) {
+      onError("Did not get message");
+    }
+  }
+
+  getPendingMessage({
+    required String content,
+    required int limit,
+    required String after,
+    required Function(MessageModel) onSuccess,
+    required Function(String) onError,
+  }) async {
+    var url = Uri.parse(
+        'https://discord.com/api/v10/channels/${ConfigReader.getChannelId()}'
+        '/messages?limit=$limit&after=$after');
+    var headers = {
+      'Authorization': ConfigReader.getToken(),
+    };
+    var response = await http.get(url, headers: headers);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final messages =
+          List<MessageModel>.from(data.map((e) => MessageModel.fromJson(e)));
+      messages.forEach((element) {
+        final regex = RegExp(r'\*\*(.*?)\*\*');
+        final match = regex.firstMatch(element.content ?? "");
+        final trimmedContent = match?.group(1) ?? element.content;
+        if (content == trimmedContent) {
+          onSuccess(element);
+        }
+      });
+    } else if (response.statusCode == 404) {
+      onError("Did not get message");
     }
   }
 

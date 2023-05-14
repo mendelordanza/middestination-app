@@ -5,6 +5,7 @@ class HistoryFields {
   static final String messageId = "messageId";
   static final String content = "content";
   static final String url = "url";
+  static final String createdAt = "createdAt";
 }
 
 class History {
@@ -12,12 +13,14 @@ class History {
   final String messageId;
   final String content;
   final String? url;
+  final String createdAt;
 
   const History({
     required this.messageId,
     this.id,
     required this.content,
     this.url,
+    required this.createdAt,
   });
 
   factory History.fromJson(Map<dynamic, dynamic> json) => History(
@@ -25,6 +28,7 @@ class History {
         messageId: json[HistoryFields.messageId] as String,
         content: json[HistoryFields.content] as String,
         url: json[HistoryFields.url] as String?,
+        createdAt: json[HistoryFields.createdAt] as String,
       );
 
   Map<String, Object?> toJson() => {
@@ -32,6 +36,7 @@ class History {
         HistoryFields.messageId: messageId,
         HistoryFields.content: content,
         HistoryFields.url: url,
+        HistoryFields.createdAt: createdAt,
       };
 
   History copy({
@@ -39,11 +44,13 @@ class History {
     String? messageId,
     String? content,
     String? url,
+    String? createdAt,
   }) =>
       History(
         id: id,
         messageId: messageId ?? this.messageId,
         content: content ?? this.content,
         url: url ?? this.url,
+        createdAt: createdAt ?? this.createdAt,
       );
 }

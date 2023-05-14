@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:midjourney_app/model/history.dart';
+import 'package:midjourney_app/model/pending.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -37,13 +38,25 @@ CREATE TABLE $tableHistory (
   ${HistoryFields.id} $idType, 
   ${HistoryFields.messageId} $stringType,
   ${HistoryFields.content} $stringType,
-  ${HistoryFields.url} $stringNullType
+  ${HistoryFields.url} $stringNullType,
+  ${HistoryFields.createdAt} $stringType
+)
+''');
+
+    await db.execute('''
+CREATE TABLE $tablePending (
+  ${PendingFields.id} $idType, 
+  ${PendingFields.messageId} $stringNullType,
+  ${PendingFields.prevMessageId} $stringType,
+  ${PendingFields.content} $stringType,
+  ${PendingFields.url} $stringNullType,
+  ${PendingFields.createdAt} $stringType
 )
 ''');
   }
 
   //Histories
-  Future<bool> checkIfExists(String value) async {
+  Future<bool> checkIfExistsComplete(String value) async {
     final db = await instance.database;
     final result = await db.query(tableHistory,
         where: '${HistoryFields.messageId} = ?', whereArgs: [value]);
@@ -51,7 +64,7 @@ CREATE TABLE $tableHistory (
   }
 
   Future<History> create(History history) async {
-    final ifExist = await checkIfExists(history.messageId);
+    final ifExist = await checkIfExistsComplete(history.messageId);
     if (!ifExist) {
       final db = await instance.database;
       final id = await db.insert(tableHistory, history.toJson());
@@ -62,8 +75,35 @@ CREATE TABLE $tableHistory (
 
   Future<List<History>> readAllHistories() async {
     final db = await instance.database;
-    final result = await db.query(tableHistory);
+    final result = await db.query(tableHistory, orderBy: 'createdAt DESC');
     return result.map((json) => History.fromJson(json)).toList();
+  }
+
+  //Pending
+  Future<bool> checkIfExistsPending(String value) async {
+    final db = await instance.database;
+    final result = await db.query(tablePending,
+        where: '${PendingFields.content} = ?', whereArgs: [value]);
+    return result.isNotEmpty;
+  }
+
+  Future<Pending> createPending(Pending pending) async {
+    final db = await instance.database;
+    final id = await db.insert(tablePending, pending.toJson());
+    return pending.copy(id: id);
+  }
+
+  Future<List<Pending>> readAllPending() async {
+    final db = await instance.database;
+    final result = await db.query(tablePending, orderBy: 'createdAt DESC');
+    return result.map((json) => Pending.fromJson(json)).toList();
+  }
+
+  Future<int> deletePending(int id) async {
+    final db = await instance.database;
+    final result = await db.delete(tablePending,
+        where: '${HistoryFields.id} = ?', whereArgs: [id]);
+    return result;
   }
 
   Future close() async {
