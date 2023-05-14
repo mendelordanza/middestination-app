@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:midjourney_app/ui/home_page.dart';
 
-void main() {
+import 'config_reader.dart';
+import 'helper/route.dart';
+import 'helper/route_strings.dart';
+import 'helper/shared_prefs.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await ConfigReader.initialize();
+
+  await SharedPrefs.init();
+
   runApp(
     ProviderScope(
       child: MyApp(),
@@ -37,7 +47,8 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: HomePage(),
+      onGenerateRoute: RouteGenerator.generateRoute,
+      initialRoute: RouteStrings.landing,
     );
   }
 }
