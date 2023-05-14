@@ -196,7 +196,7 @@ class HttpService {
     var url = Uri.parse('https://api.gumroad.com/v2/licenses/verify');
     var headers = {'Content-Type': 'application/x-www-form-urlencoded'};
     var body = {
-      'product_id': 'g1xenEhpxl7u9-ZLgCysTQ==',
+      'product_id': ConfigReader.getGumroadProductId(),
       'license_key': license,
     };
     var response = await http.post(url, headers: headers, body: body);
@@ -212,8 +212,8 @@ class HttpService {
     var url = Uri.parse('https://api.gumroad.com/v2/licenses/disable');
     var headers = {'Content-Type': 'application/x-www-form-urlencoded'};
     var body = {
-      'access_token': 'ZYunNSp0Y86x98XLE9lbCDQRfjt6ZD6DkLnUiEQlByE',
-      'product_id': 'g1xenEhpxl7u9-ZLgCysTQ==',
+      'access_token': ConfigReader.getGumroadAccessToken(),
+      'product_id': ConfigReader.getGumroadProductId(),
       'license_key': license,
     };
 

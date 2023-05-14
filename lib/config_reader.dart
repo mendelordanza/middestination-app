@@ -32,4 +32,12 @@ abstract class ConfigReader {
   static String getId() {
     return _config!['ID'] as String;
   }
+
+  static String getGumroadAccessToken() {
+    return _config!['GUMROAD_ACCESS_TOKEN'] as String;
+  }
+
+  static String getGumroadProductId() {
+    return _config!['GUMROAD_PRODUCT_ID'] as String;
+  }
 }
