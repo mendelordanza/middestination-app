@@ -1,1 +1,1 @@
-const initialFreeCredits = 5;
+const initialFreeCredits = 0;

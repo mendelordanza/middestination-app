@@ -9,6 +9,7 @@ class CustomTextField extends StatelessWidget {
   Widget? prefix;
   TextInputType? textInputType;
   int? maxLines;
+  bool? autofocus;
 
   CustomTextField({
     required this.controller,
@@ -19,6 +20,7 @@ class CustomTextField extends StatelessWidget {
     this.prefix,
     this.textInputType,
     this.maxLines,
+    this.autofocus,
   });
 
   @override
@@ -44,6 +46,7 @@ class CustomTextField extends StatelessWidget {
           keyboardType: textInputType,
           textInputAction: textInputAction,
           maxLines: maxLines,
+          autofocus: autofocus ?? false,
           decoration: InputDecoration(
             hintText: hintText,
             enabledBorder: OutlineInputBorder(

@@ -188,7 +188,7 @@ class HttpService {
     }
   }
 
-  verifyLicense(
+  Future verifyLicense(
     String license,
     Function(VerifyModel) onSuccess,
     Function(String) onError,

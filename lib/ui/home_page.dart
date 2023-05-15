@@ -36,6 +36,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   String? sessionId;
   String? messageId;
   var _isLoading = false;
+  var _isVerifying = false;
 
   List<String> variations = [];
   final promptTextController = TextEditingController();
@@ -184,6 +185,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          backgroundColor: Color(0xFFfcfcfc),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16.0),
           ),
@@ -200,62 +202,81 @@ class _HomePageState extends ConsumerState<HomePage> {
                   fontSize: 16.0,
                 ),
               ),
-              CustomTextField(controller: licenseKeyController),
+              CustomTextField(
+                controller: licenseKeyController,
+                autofocus: true,
+              ),
             ],
           ),
           actions: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: InkWell(
-                onTap: () {
-                  //Save license key to shared preferences
-                  prefs.setLicenseKey(licenseKeyController.text);
-                  http.verifyLicense(
-                    licenseKeyController.text,
-                    (verification) {
-                      Navigator.pop(context);
-                      if (verification.uses > 11) {
-                        showSnackBar(
-                            "This license has already been used. Please purchase a new license");
-                      } else {
-                        showSnackBar(
-                            "You can now enjoy ${11 - verification.uses} more image generations!");
-                      }
-                    },
-                    (message) {
-                      Navigator.pop(context);
-                      showSnackBar(message);
-                    },
-                  );
-                },
-                child: Ink(
-                  width: double.infinity,
-                  padding: EdgeInsets.symmetric(
-                    vertical: 11.0,
-                    horizontal: 16.0,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Color(0xFFFFA800),
-                        Color(0xFF9E00FF),
-                      ],
+            StatefulBuilder(
+                builder: (BuildContext context, StateSetter setState) {
+              return Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: InkWell(
+                  onTap: () {
+                    setState(() {
+                      _isVerifying = true;
+                    });
+                    if (!_isVerifying) {
+                      //Save license key to shared preferences
+                      prefs.setLicenseKey(licenseKeyController.text);
+                      http.verifyLicense(
+                        licenseKeyController.text,
+                        (verification) {
+                          setState(() {
+                            _isVerifying = false;
+                          });
+                          if (verification.uses > 11) {
+                            showSnackBar(
+                                "This license has already been used. Please purchase a new license");
+                          } else {
+                            showSnackBar(
+                                "You can now enjoy ${11 - verification.uses} more image generations!");
+                          }
+                          Navigator.pop(context);
+                        },
+                        (message) {
+                          setState(() {
+                            _isVerifying = false;
+                          });
+                          Navigator.pop(context);
+                          showSnackBar(message);
+                        },
+                      );
+                    }
+                  },
+                  child: Ink(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(
+                      vertical: 11.0,
+                      horizontal: 16.0,
                     ),
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                  child: Center(
-                    child: Text(
-                      "Verify",
-                      style: TextStyle(
-                        fontSize: 14.0,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Color(0xFFFFA800),
+                          Color(0xFF9E00FF),
+                        ],
                       ),
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    child: Center(
+                      child: _isVerifying
+                          ? PlatformProgressIndicator()
+                          : Text(
+                              "Verify",
+                              style: TextStyle(
+                                fontSize: 14.0,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                 ),
-              ),
-            ),
+              );
+            }),
           ],
         );
       },
@@ -606,6 +627,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                               content:
                                                   promptTextController.text);
                                       sendPrompt(http);
+                                      promptTextController.clear();
                                     }
                                   },
                                   (message) {
@@ -620,10 +642,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                                     .saveToPending(
                                         content: promptTextController.text);
                                 sendPrompt(http);
+                                promptTextController.clear();
                               }
                             }
                           }
-                          promptTextController.clear();
                         },
                         child: _isLoading
                             ? PlatformProgressIndicator(
@@ -657,7 +679,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   checkSpam(String randomString) {
-    RegExp pattern = RegExp(r'^[a-zA-Z0-9!@#$&*~]{8,}$'); // pattern to match salphanumeric characters
+    RegExp pattern = RegExp(
+        r'^[a-zA-Z0-9!@#$&*~]{8,}$'); // pattern to match salphanumeric characters
     return pattern.hasMatch(randomString);
   }
 }
