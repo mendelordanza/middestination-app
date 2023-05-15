@@ -579,53 +579,51 @@ class _HomePageState extends ConsumerState<HomePage> {
                       CustomButton(
                         onPressed: () {
                           //Check if there is still 10 free questions
-                          if (_formKey.currentState!.validate() &&
-                              !_isLoading) {
-                            promptTextController.clear();
-                            final http = ref.read(httpProvider);
-                            final prefs = ref.read(sharedPrefsProvider);
-                            final currentCount =
-                                ref.read(creditsCheckerProvider);
-                            final licenseKey = prefs.getLicenseKey();
+                          if (checkSpam(promptTextController.text)) {
+                            showSnackBar(
+                                "Your prompt might be a spam. Please try a different prompt");
+                          } else {
+                            if (_formKey.currentState!.validate() &&
+                                !_isLoading) {
+                              final http = ref.read(httpProvider);
+                              final prefs = ref.read(sharedPrefsProvider);
+                              final currentCount =
+                                  ref.read(creditsCheckerProvider);
+                              final licenseKey = prefs.getLicenseKey();
 
-                            if (licenseKey != null) {
-                              http.verifyLicense(
-                                licenseKey,
-                                (verification) {
-                                  if (verification.uses > 11) {
-                                    http.disableLicense(licenseKey);
-                                    prefs.removeLicenseKey();
+                              if (licenseKey != null) {
+                                http.verifyLicense(
+                                  licenseKey,
+                                  (verification) {
+                                    if (verification.uses > 11) {
+                                      http.disableLicense(licenseKey);
+                                      prefs.removeLicenseKey();
+                                      showBuyMoreCredits();
+                                    } else {
+                                      ref
+                                          .read(pendingImagesProvider.notifier)
+                                          .saveToPending(
+                                              content:
+                                                  promptTextController.text);
+                                      sendPrompt(http);
+                                    }
+                                  },
+                                  (message) {
                                     showBuyMoreCredits();
-                                  } else {
-                                    ref
-                                        .read(pendingImagesProvider.notifier)
-                                        .saveToPending(
-                                            content: promptTextController.text);
-                                    sendPrompt(http);
-                                  }
-                                },
-                                (message) {
-                                  showBuyMoreCredits();
-                                },
-                              );
-                            } else if (currentCount == 0) {
-                              showBuyMoreCredits();
-                            } else {
-                              ref
-                                  .read(pendingImagesProvider.notifier)
-                                  .saveToPending(
-                                      content: promptTextController.text);
-                              sendPrompt(http);
+                                  },
+                                );
+                              } else if (currentCount == 0) {
+                                showBuyMoreCredits();
+                              } else {
+                                ref
+                                    .read(pendingImagesProvider.notifier)
+                                    .saveToPending(
+                                        content: promptTextController.text);
+                                sendPrompt(http);
+                              }
                             }
-
-                            // sendToMidjourney(imagine: () {
-                            //   ref
-                            //       .read(pendingImagesProvider.notifier)
-                            //       .saveToPending(
-                            //           content: promptTextController.text);
-                            //   sendPrompt(http);
-                            // });
                           }
+                          promptTextController.clear();
                         },
                         child: _isLoading
                             ? PlatformProgressIndicator(
@@ -656,5 +654,11 @@ class _HomePageState extends ConsumerState<HomePage> {
         ref.read(creditsCheckerProvider.notifier).decrement();
       });
     }
+  }
+
+  checkSpam(String randomString) {
+    RegExp pattern =
+        RegExp(r'^[a-zA-Z0-9]+$'); // pattern to match salphanumeric characters
+    return pattern.hasMatch(randomString);
   }
 }
