@@ -43,7 +43,6 @@ class CustomTextField extends StatelessWidget {
           validator: validator,
           keyboardType: textInputType,
           textInputAction: textInputAction,
-          autofocus: true,
           maxLines: maxLines,
           decoration: InputDecoration(
             hintText: hintText,

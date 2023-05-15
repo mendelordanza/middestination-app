@@ -463,173 +463,181 @@ class _HomePageState extends ConsumerState<HomePage> {
         )
         .values
         .toList();
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(
-            "Middestination",
-            style: TextStyle(
+    return GestureDetector(
+      onTap: () {
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
+      child: DefaultTabController(
+        length: 2,
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(
+              "Middestination",
+              style: TextStyle(
+                color: Colors.black87,
+              ),
+            ),
+            iconTheme: IconThemeData(
               color: Colors.black87,
             ),
+            elevation: 0,
+            backgroundColor: Colors.transparent,
           ),
-          iconTheme: IconThemeData(
-            color: Colors.black87,
-          ),
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-        ),
-        body: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Form(
-                  key: _formKey,
-                  child: CustomTextField(
-                    label: "Prompt",
-                    controller: promptTextController,
-                    textInputType: TextInputType.multiline,
-                    maxLines: 5,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Prompt is required';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ),
-              TabBar(
-                indicatorColor: Colors.black,
-                labelColor: Colors.black87,
-                tabs: [
-                  Tab(
-                    text: "Pending",
-                  ),
-                  Tab(text: "Complete"),
-                ],
-                indicatorSize: TabBarIndicatorSize.tab,
-              ),
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    PendingPage(),
-                    CompletePage(),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    if (prefs.getLicenseKey() == null)
-                      Consumer(builder: (context, ref, _) {
-                        final count = ref.watch(creditsCheckerProvider);
-                        return Padding(
-                          padding: const EdgeInsets.only(left: 16.0),
-                          child: Text(
-                            "$count free credits left",
-                            style: TextStyle(
-                              color: Colors.black87,
-                            ),
-                          ),
-                        );
-                      }),
-                    SizedBox(
-                      height: 10,
-                    ),
-                    // InkWell(
-                    //   onTap: () {
-                    //     _launchUrl("https://rlphfrmthestart.gumroad.com/l/mgqaa");
-                    //     licenseVerificationDialog();
-                    //   },
-                    //   child: Ink(
-                    //     width: double.infinity,
-                    //     padding: EdgeInsets.symmetric(
-                    //       vertical: 11.0,
-                    //       horizontal: 16.0,
-                    //     ),
-                    //     decoration: BoxDecoration(
-                    //       gradient: LinearGradient(
-                    //         colors: [
-                    //           Color(0xFFFFA800),
-                    //           Color(0xFF9E00FF),
-                    //         ],
-                    //       ),
-                    //       borderRadius: BorderRadius.circular(8.0),
-                    //     ),
-                    //     child: Center(
-                    //       child: Text(
-                    //         "Buy Credits",
-                    //         style: TextStyle(
-                    //           fontSize: 14.0,
-                    //           fontWeight: FontWeight.w700,
-                    //           color: Colors.white,
-                    //         ),
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ),
-                    CustomButton(
-                      onPressed: () {
-                        //Check if there is still 10 free questions
-                        if (_formKey.currentState!.validate() && !_isLoading) {
-                          final http = ref.read(httpProvider);
-                          final prefs = ref.read(sharedPrefsProvider);
-                          final currentCount = ref.read(creditsCheckerProvider);
-                          final licenseKey = prefs.getLicenseKey();
-
-                          if (licenseKey != null) {
-                            http.verifyLicense(
-                              licenseKey,
-                              (verification) {
-                                if (verification.uses > 11) {
-                                  http.disableLicense(licenseKey);
-                                  prefs.removeLicenseKey();
-                                  showBuyMoreCredits();
-                                } else {
-                                  ref
-                                      .read(pendingImagesProvider.notifier)
-                                      .saveToPending(
-                                          content: promptTextController.text);
-                                  sendPrompt(http);
-                                }
-                              },
-                              (message) {
-                                showBuyMoreCredits();
-                              },
-                            );
-                          } else if (currentCount == 0) {
-                            showBuyMoreCredits();
-                          } else {
-                            ref
-                                .read(pendingImagesProvider.notifier)
-                                .saveToPending(
-                                    content: promptTextController.text);
-                            sendPrompt(http);
-                          }
-
-                          // sendToMidjourney(imagine: () {
-                          //   ref
-                          //       .read(pendingImagesProvider.notifier)
-                          //       .saveToPending(
-                          //           content: promptTextController.text);
-                          //   sendPrompt(http);
-                          // });
+          body: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Form(
+                    key: _formKey,
+                    child: CustomTextField(
+                      label: "Prompt",
+                      controller: promptTextController,
+                      textInputType: TextInputType.text,
+                      maxLines: 1,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Prompt is required';
                         }
+                        return null;
                       },
-                      child: _isLoading
-                          ? PlatformProgressIndicator(
-                              color: Colors.white,
-                            )
-                          : Text("Generate"),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+                TabBar(
+                  indicatorColor: Colors.black,
+                  labelColor: Colors.black87,
+                  tabs: [
+                    Tab(
+                      text: "Pending",
+                    ),
+                    Tab(text: "Complete"),
+                  ],
+                  indicatorSize: TabBarIndicatorSize.tab,
+                ),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      PendingPage(),
+                      CompletePage(),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      if (prefs.getLicenseKey() == null)
+                        Consumer(builder: (context, ref, _) {
+                          final count = ref.watch(creditsCheckerProvider);
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 16.0),
+                            child: Text(
+                              "$count free credits left",
+                              style: TextStyle(
+                                color: Colors.black87,
+                              ),
+                            ),
+                          );
+                        }),
+                      SizedBox(
+                        height: 10,
+                      ),
+                      // InkWell(
+                      //   onTap: () {
+                      //     _launchUrl("https://rlphfrmthestart.gumroad.com/l/mgqaa");
+                      //     licenseVerificationDialog();
+                      //   },
+                      //   child: Ink(
+                      //     width: double.infinity,
+                      //     padding: EdgeInsets.symmetric(
+                      //       vertical: 11.0,
+                      //       horizontal: 16.0,
+                      //     ),
+                      //     decoration: BoxDecoration(
+                      //       gradient: LinearGradient(
+                      //         colors: [
+                      //           Color(0xFFFFA800),
+                      //           Color(0xFF9E00FF),
+                      //         ],
+                      //       ),
+                      //       borderRadius: BorderRadius.circular(8.0),
+                      //     ),
+                      //     child: Center(
+                      //       child: Text(
+                      //         "Buy Credits",
+                      //         style: TextStyle(
+                      //           fontSize: 14.0,
+                      //           fontWeight: FontWeight.w700,
+                      //           color: Colors.white,
+                      //         ),
+                      //       ),
+                      //     ),
+                      //   ),
+                      // ),
+                      CustomButton(
+                        onPressed: () {
+                          //Check if there is still 10 free questions
+                          if (_formKey.currentState!.validate() &&
+                              !_isLoading) {
+                            promptTextController.clear();
+                            final http = ref.read(httpProvider);
+                            final prefs = ref.read(sharedPrefsProvider);
+                            final currentCount =
+                                ref.read(creditsCheckerProvider);
+                            final licenseKey = prefs.getLicenseKey();
+
+                            if (licenseKey != null) {
+                              http.verifyLicense(
+                                licenseKey,
+                                (verification) {
+                                  if (verification.uses > 11) {
+                                    http.disableLicense(licenseKey);
+                                    prefs.removeLicenseKey();
+                                    showBuyMoreCredits();
+                                  } else {
+                                    ref
+                                        .read(pendingImagesProvider.notifier)
+                                        .saveToPending(
+                                            content: promptTextController.text);
+                                    sendPrompt(http);
+                                  }
+                                },
+                                (message) {
+                                  showBuyMoreCredits();
+                                },
+                              );
+                            } else if (currentCount == 0) {
+                              showBuyMoreCredits();
+                            } else {
+                              ref
+                                  .read(pendingImagesProvider.notifier)
+                                  .saveToPending(
+                                      content: promptTextController.text);
+                              sendPrompt(http);
+                            }
+
+                            // sendToMidjourney(imagine: () {
+                            //   ref
+                            //       .read(pendingImagesProvider.notifier)
+                            //       .saveToPending(
+                            //           content: promptTextController.text);
+                            //   sendPrompt(http);
+                            // });
+                          }
+                        },
+                        child: _isLoading
+                            ? PlatformProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : Text("Generate"),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
