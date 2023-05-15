@@ -62,6 +62,9 @@ dependencies:
   #Url Launcher
   url_launcher: ^6.1.10
 
+  #Change Package Name
+  change_app_package_name: ^1.1.0
+
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2

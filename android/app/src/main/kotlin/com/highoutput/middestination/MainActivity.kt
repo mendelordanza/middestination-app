@@ -1,4 +1,4 @@
-package com.example.midjourney_app
+package com.highoutput.middestination
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.midjourney_app">
+    package="com.highoutput.middestination">
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
