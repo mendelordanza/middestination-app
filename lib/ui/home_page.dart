@@ -215,36 +215,25 @@ class _HomePageState extends ConsumerState<HomePage> {
                 padding: const EdgeInsets.all(8.0),
                 child: InkWell(
                   onTap: () {
-                    setState(() {
-                      _isVerifying = true;
-                    });
-                    if (!_isVerifying) {
-                      //Save license key to shared preferences
-                      prefs.setLicenseKey(licenseKeyController.text);
-                      http.verifyLicense(
-                        licenseKeyController.text,
-                        (verification) {
-                          setState(() {
-                            _isVerifying = false;
-                          });
-                          if (verification.uses > 11) {
-                            showSnackBar(
-                                "This license has already been used. Please purchase a new license");
-                          } else {
-                            showSnackBar(
-                                "You can now enjoy ${11 - verification.uses} more image generations!");
-                          }
-                          Navigator.pop(context);
-                        },
-                        (message) {
-                          setState(() {
-                            _isVerifying = false;
-                          });
-                          Navigator.pop(context);
-                          showSnackBar(message);
-                        },
-                      );
-                    }
+                    //Save license key to shared preferences
+                    prefs.setLicenseKey(licenseKeyController.text);
+                    http.verifyLicense(
+                      licenseKeyController.text,
+                      (verification) {
+                        if (verification.uses > 11) {
+                          showSnackBar(
+                              "This license has already been used. Please purchase a new license");
+                        } else {
+                          showSnackBar(
+                              "You can now enjoy ${11 - verification.uses} more image generations!");
+                        }
+                        Navigator.pop(context);
+                      },
+                      (message) {
+                        Navigator.pop(context);
+                        showSnackBar(message);
+                      },
+                    );
                   },
                   child: Ink(
                     width: double.infinity,

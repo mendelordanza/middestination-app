@@ -200,7 +200,7 @@ class HttpService {
       'license_key': license,
     };
     var response = await http.post(url, headers: headers, body: body);
-
+    print(response.statusCode);
     if (response.statusCode == 200) {
       onSuccess(VerifyModel.fromJson(jsonDecode(response.body)));
     } else if (response.statusCode == 404) {
