@@ -2,15 +2,26 @@
 
 A new Flutter project.
 
-## Getting Started
+## ADDING YOUR OWN MIDJOURNEY SERVER
 
-This project is a starting point for a Flutter application.
+To create your own Midjourney server, refer to this link https://www.youtube.com/watch?v=mcOF8ihGI1A
 
-A few resources to get you started if this is your first Flutter project:
+1. Create a `config` folder on the root
+2. Add a `app_config.json` file.
+3. Add the following:
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```
+{
+"TOKEN": <YOUR_DISCORD_ACCESS_TOKEN>,
+"APPLICATION_ID": <YOUR_DISCORD_APPLICATION_ID>,
+"GUILD_ID": <YOUR_DISCORD_GUILD_ID>,
+"CHANNEL_ID": <YOUR_DISCORD_CHANNEL_ID>,
+"VERSION": <YOUR_DISCORD_VERSION>,
+"ID": <YOUR_DISCORD_ID>,
+"GUMROAD_ACCESS_TOKEN": <YOUR_GUMROAD_ACCESS_TOKEN>,
+"GUMROAD_PRODUCT_ID": <YOUR_GUMROAD_PRODUCT_ID>,
+}
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+4. To get these values, open your server in discord web and make sure to open your inspect element > network.
+5. Type `/imagine <your prompt>` in Discord. Look for the `interactions` network call and get the values from the payload.
